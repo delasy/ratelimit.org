@@ -1,0 +1,14 @@
+import bodyParser from 'body-parser'
+import { Router } from 'express'
+import notFoundController from '../controllers/not-found.mjs'
+import registerController from '../controllers/register.mjs'
+import requestController from '../controllers/request.mjs'
+import wrap from '../middlewares/wrap.mjs'
+
+const router = Router()
+const textParser = bodyParser.text({ type: () => true })
+
+router.get('/register', wrap(registerController))
+router.all('*', textParser, wrap(requestController), notFoundController)
+
+export default router

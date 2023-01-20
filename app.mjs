@@ -1,0 +1,26 @@
+import './dotenv.mjs'
+
+import express from 'express'
+import redis from './redis.mjs'
+import routes from './routes/index.mjs'
+
+const app = express()
+const port = process.env.PORT || 8080
+
+app.disable('x-powered-by')
+app.set('redis', redis)
+app.set('trust proxy', true)
+app.use(express.static('public'))
+app.use(routes)
+
+const server = app.listen(port, () => {
+  console.info(`Listening on port ${port}`)
+})
+
+process.on('SIGTERM', () => {
+  console.info('SIGTERM signal received: closing HTTP server')
+
+  server.close(() => {
+    console.info('HTTP server closed')
+  })
+})
