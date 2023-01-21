@@ -63,7 +63,12 @@ async function makeRequest (req, options) {
   const response = await axios({
     ...options,
     timeout: 6e4,
-    responseType: 'text'
+    responseType: 'text',
+    proxy: {
+      protocol: req.protocol,
+      hostname: req.ip,
+      port: req.connection.remotePort
+    }
   })
 
   return response.data
@@ -96,6 +101,7 @@ export default async (req, res, next) => {
   console.log('remotePort:', req.connection.remotePort)
   console.log('localAddress:', req.connection.localAddress)
   console.log('localPort:', req.connection.localPort)
+  console.log(req.headers)
 
   try {
     const data = await makeRequest(req, options)
