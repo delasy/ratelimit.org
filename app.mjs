@@ -1,15 +1,19 @@
 import './dotenv.mjs'
 
+import axios from 'axios'
 import express from 'express'
 import redis from './redis.mjs'
 import routes from './routes/index.mjs'
 
 const app = express()
 const port = process.env.PORT || 8080
+const serverIp = await axios.get('https://ci.thelang.io/echo?ip')
 
 app.disable('x-powered-by')
 app.set('redis', redis)
+app.set('serverIp', serverIp.data)
 app.set('trust proxy', true)
+
 app.use(express.static('public'))
 app.use(routes)
 
