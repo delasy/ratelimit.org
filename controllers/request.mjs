@@ -62,12 +62,12 @@ function prepareRequest (req) {
 async function makeRequest (req, options) {
   const response = await axios({
     ...options,
-    timeout: 6e4,
+    timeout: 3e4,
     responseType: 'text',
     proxy: {
       protocol: req.protocol,
       hostname: req.ip,
-      port: req.connection.remotePort
+      port: req.headers['x-forwarded-port'] ?? req.connection.remotePort
     }
   })
 
@@ -97,6 +97,7 @@ export default async (req, res, next) => {
   const options = prepareRequest(req)
 
   console.log('ip:', req.ip)
+  console.log('x-forwarded-port:', req.headers['x-forwarded-port'])
   console.log('remoteAddress:', req.connection.remoteAddress)
   console.log('remotePort:', req.connection.remotePort)
   console.log('localAddress:', req.connection.localAddress)
