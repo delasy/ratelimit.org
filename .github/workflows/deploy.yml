@@ -30,7 +30,7 @@ jobs:
           host: ${{ secrets.AWS_EC2_HOST }}
           username: ${{ secrets.AWS_EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_KEY }}
-          script: "rm -rf /app/.git /app/node_modules"
+          script: "rm -rf /app/..?* /app/.[!.]* /app/*"
       - uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.AWS_EC2_HOST }}
