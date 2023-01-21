@@ -118,7 +118,9 @@ export default async (req, res, next) => {
   const data = response.data.replaceAll(req.app.get('serverIp'), packageJSON.name)
 
   for (const key of Object.keys(response.headers)) {
-    res.set(key, response.headers[key])
+    if (!['content-length'].includes(key)) {
+      res.set(key, response.headers[key])
+    }
   }
 
   res.status(response.status).end(data)
