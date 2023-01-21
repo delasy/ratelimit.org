@@ -59,7 +59,7 @@ function prepareRequest (req) {
   }
 }
 
-async function makeRequest (options) {
+async function makeRequest (req, options) {
   const response = await axios({
     ...options,
     timeout: 6e4,
@@ -91,8 +91,14 @@ export default async (req, res, next) => {
 
   const options = prepareRequest(req)
 
+  console.log('ip:', req.ip)
+  console.log('remoteAddress:', req.connection.remoteAddress)
+  console.log('remotePort:', req.connection.remotePort)
+  console.log('localAddress:', req.connection.localAddress)
+  console.log('localPort:', req.connection.localPort)
+
   try {
-    const data = await makeRequest(options)
+    const data = await makeRequest(req, options)
     res.end(data)
   } catch (err) {
     console.error(err)
