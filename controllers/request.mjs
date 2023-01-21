@@ -67,7 +67,7 @@ async function makeRequest (req, options) {
     proxy: {
       protocol: req.protocol,
       hostname: req.ip,
-      port: req.headers['x-forwarded-port'] ?? req.connection.remotePort
+      port: parseInt(req.headers['x-forwarded-port'] ?? req.connection.remotePort)
     }
   })
 
