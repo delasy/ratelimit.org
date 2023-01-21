@@ -1,20 +1,72 @@
+import axios from 'axios'
 import * as fs from 'fs'
 import { validate as uuidValidate, version as uuidVersion } from 'uuid'
 import validator from 'validator'
 
-const standardHeaders = fs.readFileSync('./data/standard-headers.txt', 'utf8')
-  .trim()
-  .split('\n')
+const packageJSON = JSON.parse(fs.readFileSync('./package.json', 'utf8'))
 
-function filterHeaders (headers) {
-  const result = {}
-  const keys = Object.keys(headers).filter(it => !standardHeaders.includes(it))
+function validRequest (req, res) {
+  const { url = '' } = req.query
 
-  for (const key of keys) {
-    result[key] = headers[key]
+  const urlValidationOptions = {
+    protocols: ['http', 'https'],
+    require_tld: true,
+    require_protocol: true,
+    require_host: true,
+    require_valid_protocol: true,
+    validate_length: true
   }
 
-  return result
+  if (url === '') {
+    res.json({ success: false, message: 'empty url' })
+    return false
+  } else if (!validator.isURL(url, urlValidationOptions)) {
+    res.json({ success: false, message: 'invalid url' })
+    return false
+  }
+
+  return true
+}
+
+function prepareRequest (req) {
+  const { url, ...restQueryParams } = req.query
+  const requestUrl = new URL(url)
+
+  const requestParams = new URLSearchParams([
+    ...Array.from(requestUrl.searchParams.entries()),
+    ...Object.entries(restQueryParams)
+  ])
+
+  const requestBody = typeof req.body === 'string' ? req.body : ''
+  const requestHeaders = {}
+
+  for (const key of Object.keys(req.headers)) {
+    if (!['cdn-loop', 'connection', 'host'].includes(key) && !key.startsWith('cf-') && !key.startsWith('x-')) {
+      requestHeaders[key] = req.headers[key]
+    }
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(req.headers, 'user-agent')) {
+    requestHeaders['user-agent'] = packageJSON.name + '/' + packageJSON.version
+  }
+
+  return {
+    method: req.method,
+    url: requestUrl.origin + requestUrl.pathname,
+    headers: requestHeaders,
+    params: requestParams,
+    data: requestBody
+  }
+}
+
+async function makeRequest (options) {
+  const response = await axios({
+    ...options,
+    timeout: 6e4,
+    responseType: 'text'
+  })
+
+  return response.data
 }
 
 export default async (req, res, next) => {
@@ -29,44 +81,21 @@ export default async (req, res, next) => {
 
   if (!reqIdExists) {
     return next()
-  }
-
-  const requestData = await redis.get(reqId)
-  const [requestsCount, timeFrame] = requestData.split('/')
-  const { url = '', ...requestQuery } = req.query
-
-  const urlValidationOptions = {
-    protocols: ['http', 'https'],
-    require_tld: true,
-    require_protocol: true,
-    require_host: true,
-    require_valid_protocol: true,
-    validate_length: true
-  }
-
-  if (url === '') {
-    res.json({ success: false, message: 'empty url' })
-    return
-  } else if (!validator.isURL(url, urlValidationOptions)) {
-    res.json({ success: false, message: 'invalid url' })
+  } else if (!validRequest(req)) {
     return
   }
 
-  const requestURL = url
-  const requestMethod = req.method
-  const requestHeaders = filterHeaders(req.headers)
-  const requestBody = typeof req.body === 'string' ? req.body : ''
-
-  console.log('url', requestURL)
-  console.log('method', requestMethod)
-  console.log('query', requestQuery)
-  console.log('headers', requestHeaders)
-  console.log('body', requestBody)
-  console.log(requestsCount, timeFrame)
-
-  // todo axios request
-  // todo give response
   // todo rate limit
+  // const requestData = await redis.get(reqId)
+  // const [requestsCount, timeFrame] = requestData.split('/')
 
-  res.end('OK')
+  const options = prepareRequest(req)
+
+  try {
+    const data = await makeRequest(options)
+    res.end(data)
+  } catch (err) {
+    console.error(err)
+    res.end('BAD')
+  }
 }
