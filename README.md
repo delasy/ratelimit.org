@@ -16,3 +16,18 @@ frame. The default is only one. \
 ### Response
 As a response you will get a UUID string, which you will need for request
 later.
+
+## Make a request
+```shell
+curl https://ratelimit.org/{id}?url=https%3A%2F%2Fexample.com
+```
+
+> Replace `{id}` with response from register request.
+
+### Query Params
+**url** - URL you want to query with a limiter. \
+**...rest** - all other query params except `url` will be forwarded when doing
+request to provided URL.
+
+### Response
+As a response you will get whatever was the response from URL.

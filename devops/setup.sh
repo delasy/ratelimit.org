@@ -4,12 +4,15 @@ domain="ratelimit.org"
 
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudp bash
 sudo apt-get update -y
-sudo apt-get install -y build-essential certbot nginx nodejs python3-certbot-nginx
+sudo apt-get install -y build-essential certbot nginx nodejs python3-certbot-nginx redis-server
 
 sudo mkdir -p /app
 sudo chown -R ubuntu:ubuntu /app
 sudo npm install -g pm2
 sudo pm2 startup -u ubuntu --hp /home/ubuntu
+
+sudo sed -e 's/^supervised .*/supervised systemd/' -i /etc/redis/redis.conf
+sudo systemctl restart redis
 
 sudo tee /etc/nginx/sites-available/$domain > /dev/null << EOF
 server {

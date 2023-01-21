@@ -52,9 +52,13 @@ export default async (req, res, next) => {
     return
   }
 
+  const requestURL = url
+  const requestMethod = req.method
   const requestHeaders = filterHeaders(req.headers)
   const requestBody = typeof req.body === 'string' ? req.body : ''
 
+  console.log('url', requestURL)
+  console.log('method', requestMethod)
   console.log('query', requestQuery)
   console.log('headers', requestHeaders)
   console.log('body', requestBody)
