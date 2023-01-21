@@ -11,7 +11,7 @@ curl https://ratelimit.org/register?requests_count=4&time_frame=1000
 ### Query Params
 **requests_count** - maximum number of requests allowed for specified time
 frame. The default is only one. \
-**time_frame** - todo.
+**time_frame** - time frame in which requests can be executed.
 
 ### Response
 As a response you will get a UUID string, which you will need for request

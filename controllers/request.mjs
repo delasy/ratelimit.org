@@ -1,6 +1,6 @@
 import axios from 'axios'
 import * as fs from 'fs'
-import { validate as uuidValidate, version as uuidVersion } from 'uuid'
+import { validate as uuidValidate, version as uuidVersion, v4 as uuidv4 } from 'uuid'
 import validator from 'validator'
 
 const packageJSON = JSON.parse(fs.readFileSync('./package.json', 'utf8'))
@@ -59,43 +59,67 @@ function prepareRequest (req) {
   }
 }
 
-async function makeRequest (req, options) {
-  const response = await axios({
-    ...options,
-    timeout: 1e4,
-    responseType: 'text'
-  })
-
-  return response.data.replaceAll(req.app.get('serverIp'), packageJSON.name)
-}
-
 export default async (req, res, next) => {
-  const reqId = req.path.slice(1)
+  const requestId = req.path.slice(1)
 
-  if (!uuidValidate(reqId) || uuidVersion(reqId) !== 4) {
+  if (!uuidValidate(requestId) || uuidVersion(requestId) !== 4) {
     return next()
   }
 
   const redis = req.app.get('redis')
-  const reqIdExists = await redis.exists(reqId)
+  const requestExists = await redis.exists(requestId)
 
-  if (!reqIdExists) {
+  if (!requestExists) {
     return next()
   } else if (!validRequest(req)) {
     return
   }
 
-  // todo rate limit
-  // const requestData = await redis.get(reqId)
-  // const [requestsCount, timeFrame] = requestData.split('/')
-
+  const executionId = uuidv4()
   const options = prepareRequest(req)
+  const store = req.app.get('store')
+  let response = null
+  let retry = 0
 
-  try {
-    const data = await makeRequest(req, options)
-    res.end(data)
-  } catch (err) {
-    console.error(err)
-    res.end('BAD')
+  await store.poll(requestId, executionId)
+
+  while (true) {
+    try {
+      response = await axios({
+        ...options,
+        timeout: 1e4,
+        responseType: 'text',
+        validateStatus: () => true
+      })
+    } catch (err) {
+      if (err.response) {
+        response = err.response
+      }
+    }
+
+    if (retry === 5 || (response !== null && response.status !== 429)) {
+      break
+    }
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 1e3)
+    })
+
+    retry++
   }
+
+  await store.ack(requestId, executionId)
+
+  if (response === null) {
+    res.status(500).end('Internal Server Error')
+    return
+  }
+
+  const data = response.data.replaceAll(req.app.get('serverIp'), packageJSON.name)
+
+  for (const key of Object.keys(response.headers)) {
+    res.set(key, response.headers[key])
+  }
+
+  res.status(response.status).end(data)
 }
