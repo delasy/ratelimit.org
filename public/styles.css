@@ -13,7 +13,7 @@ body {
 
 header {
   background-color: #5AC4F6;
-  padding: 64px 0;
+  padding: 64px 15px;
 }
 
 .header__headline {
@@ -29,6 +29,15 @@ header {
   color: #FFFFFF;
   font-family: 'Roboto', sans-serif;
   font-size: 32px;
+  font-weight: 400;
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.header__paragraph {
+  color: #FFFFFF;
+  font-family: 'Roboto', sans-serif;
+  font-size: 16px;
   font-weight: 400;
   margin: 0;
   text-align: center;
