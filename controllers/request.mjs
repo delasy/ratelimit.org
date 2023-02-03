@@ -71,7 +71,7 @@ export default async (req, res, next) => {
 
   if (!requestExists) {
     return next()
-  } else if (!validRequest(req)) {
+  } else if (!validRequest(req, res)) {
     return
   }
 
