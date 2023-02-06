@@ -2,7 +2,7 @@
 
 domain="ratelimit.org"
 
-curl -fsSL https://deb.nodesource.com/setup_lts.x | sudp bash
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo bash
 sudo apt-get update -y
 sudo apt-get install -y build-essential certbot nginx nodejs python3-certbot-nginx redis-server
 
