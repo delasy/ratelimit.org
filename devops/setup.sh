@@ -10,6 +10,10 @@ sudo mkdir -p /app
 sudo chown -R ubuntu:ubuntu /app
 sudo npm install -g pm2
 sudo pm2 startup -u ubuntu --hp /home/ubuntu
+pm2 install pm2-logrotate
+pm2 set pm2-logrotate:max_size 1G
+pm2 set pm2-logrotate:compress true
+pm2 set pm2-logrotate:rotateInterval '0 * * * *'
 
 sudo sed -e 's/^supervised .*/supervised systemd/' -i /etc/redis/redis.conf
 sudo systemctl restart redis
