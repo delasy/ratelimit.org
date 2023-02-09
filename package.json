@@ -1,6 +1,6 @@
 {
   "name": "ratelimit.org",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Rate limiting service",
   "main": "app.mjs",
   "repository": "github:delasy/ratelimit.org.git",
