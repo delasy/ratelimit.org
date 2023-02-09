@@ -30,7 +30,7 @@ class Store extends EventEmitter {
 
     if (dataExists.q.length !== 1) {
       await new Promise((resolve) => {
-        this.on(request + '-' + id, resolve)
+        this.once(request + '-' + id, resolve)
       })
     }
 
