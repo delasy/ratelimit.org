@@ -10,100 +10,90 @@ import EventEmitter from 'events'
  * atf - actual time frame
  */
 class Store extends EventEmitter {
+  #available
   #data
   #redis
 
   constructor (redis) {
     super()
 
+    this.#available = []
     this.#data = []
     this.#redis = redis
   }
 
-  async ack (request, id) {
-    console.info('await queueRemove')
-    const data = await this.#queueRemove(request, id)
-    if (data.q.length > 0) {
-      console.info('emit', data.q[0])
+  ack (requestId, executionId) {
+    console.info('queueRemove', executionId)
+    const dataIdx = this.#queueGetIdx(requestId)
+
+    if (this.#data[dataIdx].q[0] === executionId) {
+      this.#data[dataIdx].q.shift()
+      this.#available[dataIdx] = true
     }
-    data.q.length > 0 && this.emit(request + '-' + data.q[0])
   }
 
-  async poll (request, id) {
-    console.info('await queuePush')
-    const dataExists = await this.#queuePush(request, id)
+  async poll (requestId, executionId) {
+    console.info('queuePush', executionId)
+    const dataIdx = this.#queueGetIdx(requestId)
+    this.#data[dataIdx].q.push(executionId)
 
-    if (dataExists.q.length !== 1) {
-      console.info('await once start', dataExists.q.length)
-      await new Promise((resolve) => {
-        this.once(request + '-' + id, resolve)
-      })
-      console.info('await once end')
+    if (this.#data[dataIdx].q.length > 1) {
+      console.info('once start', executionId, this.#data[dataIdx].q.length)
+
+      while (!this.#available[requestId] || this.#data[dataIdx].q[0] !== executionId) {
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+
+      this.#available[requestId] = false
+      console.info('once end', executionId)
     }
 
-    const data = await this.#queueGet(request)
-    console.info('await queueGet', dataExists.q.length)
+    console.info('queueGet', executionId, this.#data[dataIdx].q.length)
 
-    if (data.atf + data.ctf > Date.now()) {
-      data.arc++
+    if (this.#data[dataIdx].atf + this.#data[dataIdx].ctf > Date.now()) {
+      this.#data[dataIdx].arc++
     } else {
-      data.arc = 1
-      data.atf = Date.now()
+      this.#data[dataIdx].arc = 1
+      this.#data[dataIdx].atf = Date.now()
     }
 
-    if (data.arc > data.crc) {
-      const drc = data.atf + data.ctf - Date.now()
+    if (this.#data[dataIdx].arc > this.#data[dataIdx].crc) {
+      const drc = this.#data[dataIdx].atf + this.#data[dataIdx].ctf - Date.now()
 
-      console.info('await time window start', drc)
+      console.info('time window start', executionId, drc)
       await new Promise((resolve) => {
         setTimeout(resolve, drc)
       })
-      console.info('await time window end')
 
-      data.arc = 1
-      data.atf = Date.now()
+      this.#data[dataIdx].arc = 1
+      this.#data[dataIdx].atf = Date.now()
+    }
+  }
+
+  #queueGetIdx (requestId) {
+    let idx = this.#data.findIndex(it => it.id === requestId)
+
+    if (idx === -1) {
+      this.#data.push({
+        id: requestId,
+        q: [],
+        crc: 1,
+        ctf: 1e3,
+        arc: 0,
+        atf: 0
+      })
+
+      this.#available.push(true)
+      idx = this.#data.length - 1
+
+      this.#redis.get(requestId).then((info) => {
+        const [requestsCount, timeFrame] = info.split('/')
+        this.#data[idx].crc = parseInt(requestsCount)
+        this.#data[idx].ctf = parseInt(timeFrame)
+      })
     }
 
-    console.info('await queueSet')
-    await this.#queueSet(request, data)
-  }
-
-  async #queueGet (request) {
-    if (this.#data.includes(request)) {
-      const data = await this.#redis.get(request + '-data')
-      return JSON.parse(data)
-    }
-
-    this.#data.push(request)
-
-    const info = await this.#redis.get(request)
-    const [requestsCount, timeFrame] = info.split('/')
-
-    return await this.#queueSet(request, {
-      id: request,
-      q: [],
-      crc: parseInt(requestsCount),
-      ctf: parseInt(timeFrame),
-      arc: 0,
-      atf: 0
-    })
-  }
-
-  async #queuePush (request, id) {
-    const data = await this.#queueGet(request)
-    data.q.push(id)
-    return await this.#queueSet(request, data)
-  }
-
-  async #queueRemove (request, id) {
-    const data = await this.#queueGet(request)
-    data.q[0] === id && data.q.shift()
-    return await this.#queueSet(request, data)
-  }
-
-  async #queueSet (request, data) {
-    await this.#redis.set(request + '-data', JSON.stringify(data))
-    return data
+    return idx
   }
 }
 

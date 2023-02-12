@@ -79,7 +79,7 @@ export default async (req, res, next) => {
   const options = prepareRequest(req)
   const store = req.app.get('store')
   let response = null
-  let retry = 0
+  let retry = 1
 
   console.info('store.poll start', requestId, executionId)
   await store.poll(requestId, executionId)
@@ -114,7 +114,7 @@ export default async (req, res, next) => {
   }
 
   console.info('store.ack', requestId, executionId)
-  await store.ack(requestId, executionId)
+  store.ack(requestId, executionId)
 
   if (response === null) {
     console.info('Internal Server Error')
