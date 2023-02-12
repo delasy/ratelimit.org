@@ -81,10 +81,13 @@ export default async (req, res, next) => {
   let response = null
   let retry = 0
 
+  console.info('store.poll start', requestId, executionId)
   await store.poll(requestId, executionId)
+  console.info('store.poll end', requestId, executionId)
 
   while (true) {
     try {
+      console.info('await axios', retry, response === null)
       response = await axios({
         ...options,
         timeout: 1e4,
@@ -92,6 +95,7 @@ export default async (req, res, next) => {
         validateStatus: () => true
       })
     } catch (err) {
+      console.info('error happened', !!err.response)
       if (err.response) {
         response = err.response
       }
@@ -101,6 +105,7 @@ export default async (req, res, next) => {
       break
     }
 
+    console.info('await retry')
     await new Promise((resolve) => {
       setTimeout(resolve, 1e3)
     })
@@ -108,9 +113,11 @@ export default async (req, res, next) => {
     retry++
   }
 
+  console.info('store.ack', requestId, executionId)
   await store.ack(requestId, executionId)
 
   if (response === null) {
+    console.info('Internal Server Error')
     res.status(500).end('Internal Server Error')
     return
   }
@@ -123,5 +130,6 @@ export default async (req, res, next) => {
     }
   }
 
+  console.info('response', response.status, data.length)
   res.status(response.status).end(data)
 }
