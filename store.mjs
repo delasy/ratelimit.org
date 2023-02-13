@@ -30,6 +30,8 @@ class Store extends EventEmitter {
       this.#data[dataIdx].q.shift()
       this.#available[dataIdx] = true
     }
+
+    this.#update()
   }
 
   async poll (requestId, executionId) {
@@ -40,13 +42,16 @@ class Store extends EventEmitter {
     if (this.#data[dataIdx].q.length > 1) {
       console.info('once start', executionId, this.#data[dataIdx].q.length)
 
-      while (!this.#available[dataIdx] || this.#data[dataIdx].q[0] !== executionId) {
-        await new Promise((resolve) => setImmediate(resolve))
-      }
+      await new Promise((resolve) => {
+        this.once(requestId + '-' + executionId, resolve)
+        this.#update()
+      })
 
-      this.#available[dataIdx] = false
       console.info('once end', executionId)
     }
+
+    this.#available[dataIdx] = false
+    this.#update()
 
     console.info('queueGet', executionId, this.#data[dataIdx].q.length)
 
@@ -56,6 +61,8 @@ class Store extends EventEmitter {
       this.#data[dataIdx].arc = 1
       this.#data[dataIdx].atf = Date.now()
     }
+
+    this.#update()
 
     if (this.#data[dataIdx].arc > this.#data[dataIdx].crc) {
       const drc = this.#data[dataIdx].atf + this.#data[dataIdx].ctf - Date.now()
@@ -67,13 +74,15 @@ class Store extends EventEmitter {
 
       this.#data[dataIdx].arc = 1
       this.#data[dataIdx].atf = Date.now()
+
+      this.#update()
     }
   }
 
   #queueGetIdx (requestId) {
-    let idx = this.#data.findIndex(it => it.id === requestId)
+    let dataIdx = this.#data.findIndex(it => it.id === requestId)
 
-    if (idx === -1) {
+    if (dataIdx === -1) {
       this.#data.push({
         id: requestId,
         q: [],
@@ -84,16 +93,24 @@ class Store extends EventEmitter {
       })
 
       this.#available.push(true)
-      idx = this.#data.length - 1
+      dataIdx = this.#data.length - 1
 
       this.#redis.get(requestId).then((info) => {
         const [requestsCount, timeFrame] = info.split('/')
-        this.#data[idx].crc = parseInt(requestsCount)
-        this.#data[idx].ctf = parseInt(timeFrame)
+        this.#data[dataIdx].crc = parseInt(requestsCount)
+        this.#data[dataIdx].ctf = parseInt(timeFrame)
       })
     }
 
-    return idx
+    return dataIdx
+  }
+
+  #update () {
+    for (const [dataIdx, it] of this.#data.entries()) {
+      if (this.#available[dataIdx] && it.q.length > 0) {
+        this.emit(it.id + '-' + it.q[0])
+      }
+    }
   }
 }
 
