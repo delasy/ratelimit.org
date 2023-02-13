@@ -117,9 +117,11 @@ export default async (req, res, next) => {
   store.ack(requestId, executionId)
 
   if (response === null) {
-    console.info('Internal Server Error')
-    res.status(500).end('Internal Server Error')
-    return
+    response = {
+      status: 408,
+      data: '',
+      headers: {}
+    }
   }
 
   const data = response.data.replaceAll(req.app.get('serverIp'), packageJSON.name)

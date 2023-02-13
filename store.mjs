@@ -40,11 +40,11 @@ class Store extends EventEmitter {
     if (this.#data[dataIdx].q.length > 1) {
       console.info('once start', executionId, this.#data[dataIdx].q.length)
 
-      while (!this.#available[requestId] || this.#data[dataIdx].q[0] !== executionId) {
+      while (!this.#available[dataIdx] || this.#data[dataIdx].q[0] !== executionId) {
         await new Promise((resolve) => setImmediate(resolve))
       }
 
-      this.#available[requestId] = false
+      this.#available[dataIdx] = false
       console.info('once end', executionId)
     }
 
