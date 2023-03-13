@@ -54,6 +54,7 @@ print(data)`
 
 export default (_req, res) => {
   res.render('home', {
+    gtm_id: process.env.GOOGLE_TAG_MANAGER_ID,
     registerCodeShell: hljs.highlight(registerCodeShell, {
       language: 'shell'
     }).value,
