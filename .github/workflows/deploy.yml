@@ -11,6 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: npm install
+      - run: echo "GOOGLE_TAG_MANAGER_ID=${{ secrets.APP_GOOGLE_TAG_MANAGER_ID }}" >> .env
       - run: echo "REDIS_URL=${{ secrets.APP_REDIS_URL }}" >> .env
       - id: ip
         uses: haythem/public-ip@v1.3
