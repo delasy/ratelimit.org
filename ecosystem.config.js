@@ -3,6 +3,12 @@ module.exports = {
     name: 'app',
     script: './app.mjs',
     time: true,
-    cwd: __dirname
+    cwd: __dirname,
+    env_production: {
+      NODE_ENV: 'production'
+    },
+    env_development: {
+      NODE_ENV: 'development'
+    }
   }]
 }
