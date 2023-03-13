@@ -46,7 +46,7 @@ jobs:
           username: ${{ secrets.AWS_EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_KEY }}
           script: |
-            pm2 reload /app/ecosystem.config.js
+            pm2 reload /app/ecosystem.config.js --env production
             pm2 save
       - if: always()
         run: |
