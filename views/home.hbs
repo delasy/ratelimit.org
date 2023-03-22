@@ -6,6 +6,15 @@
 <main>
   <div class="container">
     <div class="main__block mb-5">
+      <h3 class="main__headline mb-4">How does it work?</h3>
+      <p class="main__paragraph">
+        First, register a limiter, limiter - is just a UUID that you can use to query RateLimit.Org API.
+        Next you need to re-route all requests from all your apps to a limiter you registered before.
+        RateLimit.Org will make sure that all the requests are made within time frame you specified while creating a limiter.<br>
+        If you want to self-host RateLimit.Org please follow instructions in <a href="https://ratelimit.notion.site/RateLimit-Org-d857d4d129e444bab4c2054e436fe1c7">this article</a>.
+      </p>
+    </div>
+    <div class="main__block mb-5">
       <h3 class="main__headline mb-4">Register a limiter</h3>
       <div class="main__code-wrapper mb-4">
         <ul class="main__code-tabs">
