@@ -10,7 +10,11 @@ const router = Router()
 const textParser = bodyParser.text({ type: () => true })
 
 router.get('/', homeController)
-router.get('/register', wrap(registerController))
+
+if (process.env.APP_REGISTRATION !== 'false') {
+  router.get('/register', wrap(registerController))
+}
+
 router.all('*', textParser, wrap(requestController), notFoundController)
 
 export default router
