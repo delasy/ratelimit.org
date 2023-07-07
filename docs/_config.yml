@@ -1,0 +1,3 @@
+title: ratelimit.org
+description: Rate Limited Requests made easy
+exclude: [vendor, CNAME, Gemfile, Gemfile.lock]
